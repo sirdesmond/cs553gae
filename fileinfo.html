@@ -1,0 +1,9 @@
+<html>
+<body>
+   <a href='read?name={{ file }}'>{{ file }}</a></br>
+   <form action="/delete" method=GET>
+      <input type=hidden name="name" value='{{ file }}' />
+      <input type=submit name="Delete" value="Delete" />
+   </form>
+</body>
+</html>

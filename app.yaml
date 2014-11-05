@@ -1,4 +1,4 @@
-application: 00b4903a970e65e29729112d2c9a3054649206427d038af2f80d7006123e2819
+application: 48405255815
 version: 1
 runtime: python27
 api_version: 1
@@ -7,3 +7,9 @@ threadsafe: true
 handlers:
    - url: /.*
      script: storage.application
+
+libraries:
+   - name: webapp2
+     version: latest
+   - name: jinja2
+     version: latest
