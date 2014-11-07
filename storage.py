@@ -13,8 +13,8 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 MEMCACHED_ENABLED=True
 
-#BUCKET = '/gs/cs553storage'
-BUCKET = '/gs/' + app_identity.get_default_gcs_bucket_name()
+BUCKET = '/gs/cs536storageproject'
+#BUCKET = '/gs/' + app_identity.get_default_gcs_bucket_name()
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -38,18 +38,21 @@ class MainPage(webapp2.RequestHandler):
 class FileUpload(webapp2.RequestHandler):
     def get(self):
         template = JINJA_ENVIRONMENT.get_template('upload.html')
-        self.response.write(template.render())
+        self.response.write(template.render({'url' : '/upload'}))
 
     def post(self):
         filename = self.request.get('filename')
         fileblob = self.request.get('fileToUpload')
+        print fileblob
         if filename != "" and fileblob != None:
             file_insert(filename, fileblob)
+        self.redirect('/')
 
 class FileGet(webapp2.RequestHandler):
     def get(self):
         filename = self.request.get('name')
-        self.response.headers['Content-Type'] = 'text/plain'
+        self.response.headers['Content-Type'] = 'text/text'
+        self.response.headers['Content-Disposition'] = 'Attatchment; filename='+str(filename)
         content = find(filename)
         self.response.write(content)
 
@@ -89,7 +92,6 @@ application = webapp2.WSGIApplication([
 
 def file_insert(key, value):
     FILEPATH = BUCKET + '/' + key
-    print FILEPATH
     write_path = files.gs.create(FILEPATH, mime_type='text/plain',
                                              acl='public-read')
     # Write to the file.
@@ -109,7 +111,7 @@ def check(key):
     if MEMCACHED_ENABLED:
         response = memcache.get(key)
         if response != None:
-            return response
+            return True
     try:
         fh = files.open(path, 'r')
     except files.ExistenceError:

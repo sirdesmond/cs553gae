@@ -16,3 +16,4 @@ libraries:
 
 skip_files:
    - files
+   - test
