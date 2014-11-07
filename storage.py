@@ -1,6 +1,6 @@
 import webapp2
 #from google.appengine.api import app_identity
-from google.appengine.api import files, app_identity
+from google.appengine.api import files, app_identity, memcache
 from google.appengine.ext import blobstore, db
 from google.appengine.ext.webapp import blobstore_handlers
 import jinja2
@@ -11,15 +11,25 @@ JINJA_ENVIRONMENT = jinja2.Environment(
             extensions=['jinja2.ext.autoescape'],
             autoescape=True)
 
+MEMCACHED_ENABLED=True
+
 #BUCKET = '/gs/cs553storage'
 BUCKET = '/gs/' + app_identity.get_default_gcs_bucket_name()
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
-        self.response.headers['Content-Type'] = 'text/html'
+        #self.response.headers['Content-Type'] = 'text/html'
         allobj = listing()
+        size = 0
+        count = 0
+        for f in allobj:
+            s = files.stat(BUCKET + '/' + f)
+            size += s.st_size
+            count += 1
         template_values = {
-                'listing' : allobj
+                'listing' : allobj,
+                'total_size': size,
+                'num_files': count
                 }
         template = JINJA_ENVIRONMENT.get_template('index.html')
         self.response.write(template.render(template_values))
@@ -79,6 +89,7 @@ application = webapp2.WSGIApplication([
 
 def file_insert(key, value):
     FILEPATH = BUCKET + '/' + key
+    print FILEPATH
     write_path = files.gs.create(FILEPATH, mime_type='text/plain',
                                              acl='public-read')
     # Write to the file.
@@ -87,10 +98,18 @@ def file_insert(key, value):
 
     # Finalize the file so it is readable in Google Cloud Storage.
     files.finalize(write_path)
+    filemeta = files.stat(FILEPATH)
+
+    if (filemeta.st_size) < 100* 1024 and MEMCACHED_ENABLED: # cache small files
+        memcache.set(key, value)
 
 
 def check(key):
     path = BUCKET + '/' + key
+    if MEMCACHED_ENABLED:
+        response = memcache.get(key)
+        if response != None:
+            return response
     try:
         fh = files.open(path, 'r')
     except files.ExistenceError:
@@ -98,8 +117,12 @@ def check(key):
     return True
 
 def find(key):
-    path = BUCKET + "/" + key
+    if MEMCACHED_ENABLED:
+        response = memcache.get(key)
+        if response != None:
+            return response
     response = ''
+    path = BUCKET + "/" + key
     with files.open(path, 'r') as fp:
         buf = fp.read(1000000)
         while buf:
@@ -112,6 +135,8 @@ def find(key):
 def remove(key):
     path = BUCKET + "/" + key
     files.delete(path)
+    if MEMCACHED_ENABLED:
+        memcache.delete(key)
 
 def listing():
     filelist = files.listdir(BUCKET)

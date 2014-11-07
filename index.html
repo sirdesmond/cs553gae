@@ -8,6 +8,8 @@
       <input type=text name=fname />
       <input type=submit name=check value=check />
    </form>
+      Total used space: {{ total_size }} </br>
+      Number of files: {{ num_files }}
    <h1>Files Stored</h1>
    <ul>
    {% for file in listing %}
