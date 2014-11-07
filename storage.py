@@ -1,6 +1,6 @@
 import webapp2
 #from google.appengine.api import app_identity
-from google.appengine.api import files
+from google.appengine.api import files, app_identity
 from google.appengine.ext import blobstore, db
 from google.appengine.ext.webapp import blobstore_handlers
 import jinja2
@@ -11,7 +11,8 @@ JINJA_ENVIRONMENT = jinja2.Environment(
             extensions=['jinja2.ext.autoescape'],
             autoescape=True)
 
-BUCKET = '/gs/cs553storageproject'
+#BUCKET = '/gs/cs553storage'
+BUCKET = '/gs/' + app_identity.get_default_gcs_bucket_name()
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
